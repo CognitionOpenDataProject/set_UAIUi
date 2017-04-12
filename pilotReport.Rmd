@@ -37,8 +37,6 @@ knitr::opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE)
 
 ## Step 1: Load packages
 
-[Some useful packages are being loaded below. You can add any additional ones you might need too.]
-
 ```{r}
 # install.packages(c("tidyverse", "knitr", "haven", "readxl", "CODreports", "magrittr", "stringr"))
 library(tidyverse) # for data munging
@@ -52,33 +50,194 @@ library(stringr)
 
 ## Step 2: Load data
 
+Load sheet 2 from the excel document. Sheet 1 contained helpful information about the data and analyses.
+
 ```{r}
-d <- read_excel()
+d <- read_excel(path = "data/data.xls", sheet = 2)
 ```
 
 ## Step 3: Tidy data
 
+Data were already in tidy format.
+
+### Data checks
+
+Do we have 12 participants?
+
 ```{r}
+n_expected <- 12
+
+n_test <- d %>% 
+  select(subject) %>% 
+  unique() %>% 
+  nrow() == n_expected
 ```
+
+Test output: `n_test`. So we have `n_expected` participants.
+
+Do we have the expected number of trials for each participant? From the article, 
+
+> The experiment began with a supervised 70-trial practice block in which observers’ only task was to report the postcued letter. Observers were then shown an example of a row of letters with high color diversity, and another with low color diversity. Obser- vers then completed 272 experimental trials, receiving a short, self-terminated break every 96 trials and a 1.5-min mandatory break every 192 trials. (p. 81)
+
+```{r}
+n_exp_trials <- 70 + 272
+
+# get the n trials for each ss
+n_trials <- d %>% 
+  group_by(subject) %>% 
+  summarise(n_trials = n()) 
+
+# check n trials against expected trials for each ss
+n_trials_test <- sum(n_trials$n_trials == n_exp_trials) == 12 
+```
+
+Test output: `n_trials_test`. Yes, we have `n_exp_trials` for each participant.
 
 ## Step 4: Run analysis
 
-### Pre-processing
-
-[you can remove this section if no pre-processing is required]
-
-```{r}
-```
-
 ### Descriptive statistics
 
+Try to reproduce the accuracy scores for Experiment 1 reported in Table 1.
+
+*Letter recall analysis*: From the codebook, 
+
+> letterRecallAccuracy averaged across subjects for mainExperiment only
+
 ```{r}
+ss_lr <- d %>% 
+  filter(trialType == "mainExperiment") %>% 
+  group_by(subject) %>% 
+  summarise(accuracy_ss = mean(letterRecallAccuracy)) 
+
+
+ss_lr %>% 
+  ungroup() %>% 
+  summarise(n = n(),
+    accuracy = mean(accuracy_ss) * 100,
+            sd = sd(accuracy_ss) * 100) %>% 
+  mutate(analysis = "letter_recall") %>% 
+  mutate_if(is.numeric, round, digits = 2) %>% 
+  kable()
 ```
+
+*Letter recall – cue type*: From the codebook,
+
+> letterRecallAccuracy averaged across subjects by cueType (mainExperiment only)
+
+```{r}
+ss_lr_cue_type <- d %>% 
+  filter(trialType == "mainExperiment") %>% 
+  group_by(subject, cueType) %>% 
+  summarise(accuracy_ss = mean(letterRecallAccuracy)) 
+
+
+ss_lr_cue_type %>% 
+  group_by(cueType) %>% 
+  summarise(n = n(),
+            accuracy = mean(accuracy_ss) * 100,
+            sd = sd(accuracy_ss) * 100) %>% 
+  mutate(analysis = "letter_recall_by_cue_type") %>% 
+  mutate_if(is.numeric, round, digits = 2) %>% 
+  kable()
+```
+
+*Color diversity*: From the codebook,
+
+> diversityAccuracy averaged across subjects (mainExperiment only)
+
+```{r}
+ss_div <- d %>% 
+  filter(trialType == "mainExperiment") %>% 
+  group_by(subject) %>%
+  mutate(diversityAccuracy = as.numeric(diversityAccuracy)) %>% 
+  summarise(accuracy_ss = mean(diversityAccuracy)) 
+
+ss_div %>% 
+  ungroup() %>% 
+  summarise(n = n(),
+            accuracy = mean(accuracy_ss) * 100,
+            sd = sd(accuracy_ss) * 100) %>% 
+  mutate(analysis = "diversity") %>% 
+  mutate_if(is.numeric, round, digits = 2) %>% 
+  kable()
+```
+
+*Color diversity by cue type*: From the codebook,
+
+> diversityAccuracy averaged across subjects by cueType (mainExperiment only)
+
+```{r}
+ss_div_by_cue <- d %>% 
+  filter(trialType == "mainExperiment") %>% 
+  group_by(subject,cueType) %>%
+  mutate(diversityAccuracy = as.numeric(diversityAccuracy)) %>% 
+  summarise(accuracy_ss = mean(diversityAccuracy)) 
+
+ss_div_by_cue %>% 
+  group_by(cueType) %>% 
+  summarise(n = n(),
+            accuracy = mean(accuracy_ss) * 100,
+            sd = sd(accuracy_ss) * 100) %>% 
+  mutate(analysis = "diversity_by_cue_type") %>% 
+  mutate_if(is.numeric, round, digits = 2) %>% 
+  kable()
+```
+
+*Color diversity by diversity type*: From the codebook,
+
+> diversityAccuracy averaged across subjects by diversityType (mainExperiment only)
+
+```{r}
+ss_div_by_div <- d %>% 
+  filter(trialType == "mainExperiment") %>% 
+  group_by(subject, diversityType) %>%
+  mutate(diversityAccuracy = as.numeric(diversityAccuracy)) %>% 
+  summarise(accuracy_ss = mean(diversityAccuracy)) 
+
+ss_div_by_div %>% 
+  group_by(diversityType) %>% 
+  summarise(n = n(),
+            accuracy = mean(accuracy_ss) * 100,
+            sd = sd(accuracy_ss) * 100) %>% 
+  mutate(analysis = "diversity_by_div_type") %>% 
+  mutate_if(is.numeric, round, digits = 2) %>% 
+  kable()
+```
+
+*Color diversity by cue type and diversity type*: From the codebook,
+
+> diversityAccuracy averaged across subjects by diversityType and cueType (mainExperiment only)
+
+There was no average accuracy reported for the interaction analysis.
 
 ### Inferential statistics
 
+*Letter recall*: use t-test to compare to chance [11.11%]. $t = 9.0, p < .001, d = 2.6$
+
 ```{r}
+lr_t <- ss_lr %>% 
+  mutate(accuracy_ss_new = accuracy_ss * 100) %>% 
+  .$accuracy_ss_new %>% 
+  t.test(mu = 11.11)
+
+lr_t
 ```
+
+Check Cohen's D (expecting 2.6)
+
+```{r}
+null_m <- .1111
+
+coh_d <- ss_lr %>% 
+  summarise(m = mean(accuracy_ss),
+            stdev = sd(accuracy_ss)) %>% 
+  mutate(coh_d = (m - null_m) / stdev) %>% 
+  mutate_if(is.numeric, round, digits = 2)
+
+coh_d$coh_d == 2.6
+```
+
+
 
 ## Step 5: Conclusion
 
