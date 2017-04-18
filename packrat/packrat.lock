@@ -185,6 +185,11 @@ Source: CRAN
 Version: 0.2.0
 Hash: 3d6e7608e65bbf5cb170dab1e3c9ed8b
 
+Package: lsr
+Source: CRAN
+Version: 0.5
+Hash: bad933846eae5c5e839d675b6bac0bb9
+
 Package: lubridate
 Source: CRAN
 Version: 1.6.0
