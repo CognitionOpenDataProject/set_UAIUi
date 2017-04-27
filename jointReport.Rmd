@@ -1,0 +1,380 @@
+---
+title: "COD Reproducibility Report"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+#### Article ID: UAIUi
+#### Pilot: Kyle MacDonald
+#### Co-pilot: Tom Hardwicke  
+#### Start date: 4/12/17
+#### End date: [Insert end date - use US format]   
+
+-------
+
+#### Methods summary: 
+
+On each trial, Ward et al. showed adult participants 24 individual letters (e.g., "A") on a computer screen arranged in a 4 by 6 array for a duration of 300 ms. The rows of the array varied in the amount of color diversity that was present (high vs. low). The task cued participants to attend to one of the rows and then to one of the letters in that row via spatial cues (boxes around the letters) and measured participants' memory for the (a) identity of the cued letter, (b) the amount of color diversity in the cued row, and (c) the color of the cued letter (see Figure below for the task sequence). The dependent variable is the proportion correct for the various combinations of trial types. 
+
+![](figs/uaiu_task.png)
+
+------
+
+#### Target outcomes: 
+
+For this article, we will focus on the findings reported for Experiment 1 in section 2.2. Specifically, we will attempt to reproduce all descriptive and inferential analyses reported in the text below and associated tables/figures:
+
+> The first step in our analyses was to average six key measurements across all participants: Letter Recall Accuracy, Letter Recall Accuracy by Cue Type (whether observers were asked about the color diversity of cued or uncued rows), Color Diversity Accuracy, Color Diversity Accuracy by Cue Type (cued or uncued rows), Color Diversity Accuracy by Diversity Type (high or low), and Color Diversity Accuracy by Cue Type and Diversity Type (interaction). These measurements are included in Table 1, along with the relevant statistics that highlight significant performance. In general, letter recall accuracy was well above chance (11.11%), and (as depicted in Fig. 3A) observers were also able to correctly report color diversity above chance (50.00%).
+  
+Here's the relevant table from the paper:  
+
+![](figs/uaiui_table1.png)
+
+------
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, warning=FALSE, message=FALSE)
+```
+
+## Step 1: Load packages
+
+```{r}
+# install.packages(c("tidyverse", "knitr", "haven", "readxl", "CODreports", "magrittr", "stringr"))
+library(tidyverse) # for data munging
+library(knitr) # for kable table formating
+library(haven) # import and export 'SPSS', 'Stata' and 'SAS' Files
+library(readxl) # import excel files
+library(CODreports) # custom report functions
+library(magrittr) # for compound pipes
+library(stringr) # for working with strings
+```
+
+## Step 2: Load data
+
+Load sheet 2 from the excel document. Sheet 1 contained helpful information about the data and analyses.
+
+```{r}
+d <- read_excel(path = "data/data.xls", sheet = 2)
+```
+
+## Step 3: Tidy data
+
+Data were already in tidy format.
+
+### Data checks
+
+Do we have 12 participants?
+
+```{r}
+n_expected <- 12
+
+n_test <- d %>% 
+  select(subject) %>% 
+  unique() %>% 
+  nrow() == n_expected
+```
+
+Test output: `r n_test`. So we have `r n_expected` participants.
+
+Do we have the expected number of trials for each participant? From the article, 
+
+> The experiment began with a supervised 70-trial practice block in which observers’ only task was to report the postcued letter. Observers were then shown an example of a row of letters with high color diversity, and another with low color diversity. Observers then completed 272 experimental trials, receiving a short, self-terminated break every 96 trials and a 1.5-min mandatory break every 192 trials. (p. 81)
+
+```{r}
+n_exp_trials <- 70 + 272
+
+# get the n trials for each ss
+n_trials <- d %>% 
+  group_by(subject) %>% 
+  summarise(n_trials = n()) 
+
+# check n trials against expected trials for each ss
+n_trials_test <- sum(n_trials$n_trials == n_exp_trials) == 12 
+```
+
+Test output: `r n_trials_test`. Yes, we have `r n_exp_trials` for each participant.
+
+## Step 4: Run analysis
+
+### Descriptive statistics
+
+Try to reproduce the accuracy scores for Experiment 1 reported in Table 1. Ward et al. provided a helpful codebook in the first sheet of their excel file that explains the computation for each cell in the table and the type of inferential statistics used for each hypothesis test. 
+
+1. *Letter recall analysis*: From the codebook, 
+
+> letterRecallAccuracy averaged across subjects for mainExperiment only
+
+```{r}
+ss_lr <- d %>% 
+  filter(trialType == "mainExperiment") %>% 
+  group_by(subject) %>% 
+  summarise(accuracy_ss = mean(letterRecallAccuracy)) 
+
+
+ss_lr %>% 
+  ungroup() %>% 
+  summarise(n = n(),
+    accuracy = mean(accuracy_ss) * 100,
+            sd = sd(accuracy_ss) * 100) %>% 
+  mutate(analysis = "letter_recall") %>% 
+  mutate_if(is.numeric, round, digits = 2) %>% 
+  kable()
+```
+
+The obtained values match the reproduced values for letter recall accuracy.
+
+2. *Letter recall – cue type*: From the codebook,
+
+> letterRecallAccuracy averaged across subjects by cueType (mainExperiment only)
+
+```{r}
+ss_lr_cue_type <- d %>% 
+  filter(trialType == "mainExperiment") %>% 
+  group_by(subject, cueType) %>% 
+  summarise(accuracy_ss = mean(letterRecallAccuracy)) 
+
+
+ss_lr_cue_type %>% 
+  group_by(cueType) %>% 
+  summarise(n = n(),
+            accuracy = mean(accuracy_ss) * 100,
+            sd = sd(accuracy_ss) * 100) %>% 
+  mutate(analysis = "letter_recall_by_cue_type") %>% 
+  mutate_if(is.numeric, round, digits = 2) %>% 
+  kable()
+```
+
+The obtained values match the reproduced values for letter recall accuracy.
+
+3. *Color diversity*: From the codebook,
+
+> diversityAccuracy averaged across subjects (mainExperiment only)
+
+```{r}
+ss_div <- d %>% 
+  filter(trialType == "mainExperiment") %>% 
+  group_by(subject) %>%
+  mutate(diversityAccuracy = as.numeric(diversityAccuracy)) %>% 
+  summarise(accuracy_ss = mean(diversityAccuracy)) 
+
+ms_div <- ss_div %>% 
+  ungroup() %>% 
+  summarise(n = n(),
+            accuracy = mean(accuracy_ss) * 100,
+            sd = sd(accuracy_ss) * 100) %>% 
+  mutate(analysis = "diversity") %>% 
+  mutate_if(is.numeric, round, digits = 2) 
+
+ms_div %>% kable()
+```
+
+The obtained mean and standard deviation of Diversity Accuracy are different from the reproduced values. 
+
+```{r}
+# mean
+compareValues(reportedValue = 64.07, obtainedValue = ms_div$accuracy)
+
+# sd
+compareValues(reportedValue = 7.81, obtainedValue = ms_div$sd)
+```
+
+I'm not sure what happened here since all the other values have been spot on. This seems like it could be my error in computing the values or a typo in the table. 
+
+4. *Color diversity by cue type*: From the codebook,
+
+> diversityAccuracy averaged across subjects by cueType (mainExperiment only)
+
+```{r}
+ss_div_by_cue <- d %>% 
+  filter(trialType == "mainExperiment") %>% 
+  group_by(subject,cueType) %>%
+  mutate(diversityAccuracy = as.numeric(diversityAccuracy)) %>% 
+  summarise(accuracy_ss = mean(diversityAccuracy)) 
+
+ss_div_by_cue %>% 
+  group_by(cueType) %>% 
+  summarise(n = n(),
+            accuracy = mean(accuracy_ss) * 100,
+            sd = sd(accuracy_ss) * 100) %>% 
+  mutate(analysis = "diversity_by_cue_type") %>% 
+  mutate_if(is.numeric, round, digits = 2) %>% 
+  kable()
+```
+
+The obtained values match the reproduced values for color diversity by cue type.
+
+5. *Color diversity by diversity type*: From the codebook,
+
+> diversityAccuracy averaged across subjects by diversityType (mainExperiment only)
+
+```{r}
+ss_div_by_div <- d %>% 
+  filter(trialType == "mainExperiment") %>% 
+  group_by(subject, diversityType) %>%
+  mutate(diversityAccuracy = as.numeric(diversityAccuracy)) %>% 
+  summarise(accuracy_ss = mean(diversityAccuracy)) 
+
+ss_div_by_div %>% 
+  group_by(diversityType) %>% 
+  summarise(n = n(),
+            accuracy = mean(accuracy_ss) * 100,
+            sd = sd(accuracy_ss) * 100) %>% 
+  mutate(analysis = "diversity_by_div_type") %>% 
+  mutate_if(is.numeric, round, digits = 2) %>% 
+  kable()
+```
+
+The obtained values match the reproduced values for color diversity by diversity type.
+
+6. *Color diversity by cue type and diversity type*: From the codebook,
+
+> diversityAccuracy averaged across subjects by diversityType and cueType (mainExperiment only)
+
+There was no average accuracy reported for the interaction analysis.
+
+### Inferential statistics
+
+1. *Letter recall*: use t-test to compare to chance [11.11%]. $t = 9.0, p < .001, d = 2.6$
+
+```{r}
+ss_lr %>% 
+  mutate(accuracy_ss_new = accuracy_ss * 100) %>% 
+  .$accuracy_ss_new %>% 
+  t.test(mu = 11.11)
+```
+
+This t-statistic and p-value match the reported values.
+
+Check Cohen's D (expecting 2.6)
+
+```{r}
+null_m <- .1111
+acc_reported_d <- 2.6
+
+coh_d <- ss_lr %>% 
+  summarise(m = mean(accuracy_ss),
+            stdev = sd(accuracy_ss)) %>% 
+  mutate(coh_d = (m - null_m) / stdev) %>% 
+  mutate_if(is.numeric, round, digits = 2)
+
+coh_d$coh_d == acc_reported_d
+```
+
+This value matches the reported Cohen's d.
+
+2. *Letter recall -- cue type*: use 1-way ANOVA to compare effect of cueType on letter recall accuracy. $F = 2.11, p = 0.17, \eta_p^2 = 0.16$
+
+```{r}
+m1 <- aov(accuracy_ss ~ cueType + Error(subject / cueType), 
+          data = ss_lr_cue_type)
+
+summary(m1)
+```
+
+From the resutls section, it wasn't immediately clear whether Ward et al. did a repeated measures ANOVA here. But when you include this information in the model, the $F$ and $p$.
+
+Check the effect size: $SS_{effect} / SS{resdiual}$ (from http://www.statisticshowto.com/eta-squared/)
+
+```{r}
+lr_eta <- round(0.00919 / (0.00919 + 0.04798), 2)
+lr_eta
+```
+
+$\eta_p^2$ values match reported values.
+
+3. *Color diversity*: use t-test to compare to chance [50%]. $t = 10.10, p < .001, d = 2.92$
+
+```{r}
+t_div <- ss_div %>% 
+  mutate(accuracy_ss_new = accuracy_ss * 100) %>% 
+  .$accuracy_ss_new %>% 
+  t.test(mu = 50)
+
+t_div
+```
+
+It looks like there might be a *very* minor error in the t-statistic. Could be rounding errors?
+
+```{r}
+compareValues(reportedValue = 10.10, obtainedValue = round(t_div$statistic, 2))
+```
+
+Check the effect size:
+
+```{r}
+null_m <- 0.5
+div_reported_d <- 2.92
+
+div_coh_d <- ss_div %>% 
+  summarise(m = mean(accuracy_ss),
+            stdev = sd(accuracy_ss)) %>% 
+  mutate(coh_d = (m - null_m) / stdev) %>% 
+  mutate_if(is.numeric, round, digits = 2)
+
+div_coh_d$coh_d == div_reported_d
+```
+
+Again, looks like a *very* minor difference between the reported and obtained Cohen's d values. 
+
+```{r}
+compareValues(reportedValue = div_reported_d, obtainedValue = div_coh_d$coh_d)
+```
+
+4-6. *Color diversity as a function of cue type and diversity type*: From the codebook,
+
+> (use 2 [cueType] x 2 [diversityType] ANOVA to find main effect of cueType on color diversity accuracy
+
+I wasn't exactly sure how they applied the 2 x 2 ANOVA in this case. Based on the codebook it seemed like they ran 3 separate models, but what I think they actually did was fit one model with two main effects and an interaction term (cue type, diversity type, cue X diversity type). Here's my attempt at reproducing their analysis: 
+
+```{r}
+ss_anova_div <- d %>% 
+  filter(trialType == "mainExperiment") %>% 
+  group_by(subject, cueType, diversityType) %>%
+  mutate(diversityAccuracy = as.numeric(diversityAccuracy)) %>% 
+  summarise(accuracy_ss = mean(diversityAccuracy)) 
+
+m.int <- aov(accuracy_ss ~ cueType * diversityType + Error(subject / (cueType * diversityType)), 
+             data = ss_anova_div)
+
+summary(m.int) 
+```
+
+It was also not clear that they were accounting for the repeated measures in their model, but I ran a two-way repeated measures and the F-statistics and p-values match the reported values (Cue Type: $F = 0.19, p =  0.67$; Diversity Type: $F = 0.09, p = 0.77$; Cue Type x Diversity type: $F = 0.03, p = 0.86$).
+
+Check the $\eta^2$ values using $SS_{effect} / SS_{total}$
+
+```{r}
+# cue type
+round(0.00171 / (0.0011 + 0.10013), 2)
+
+# diversity type
+round(0.0011 / (0.0011 + 0.1341), 2)
+
+# cue type by diversity type interaction
+round(0.00046 / (0.00046 + 0.16049), 2)
+```
+
+The effect size measures match the reported values.
+
+## Step 5: Conclusion
+
+```{r}
+codReport(Report_Type = 'joint',
+          Article_ID = 'UAIUi', 
+          Insufficient_Information_Errors = 0,
+          Decision_Errors = 0, 
+          Major_Numerical_Errors = 1, 
+          Minor_Numerical_Errors = 2)
+```
+
+Overall, I thought the authors did a good job facilitating reproducibility by providing a tidy data file with relatively clear documentation about the variable types and about how to perform the various analyses. The only place where I had trouble reproducing the reported values was the *Color Diversity Accuracy* analysis. I got a different mean value and a different standard deviation. The authors do mention in their codebook that participants 1-3 completed a different number of trials:
+
+> The first three subjects in Exp 1 and Exp 2 (d1-d3; s1-s3) were run in a longer version, but only analyzed up to the same trial number as the other subjects. This resulted in a different total number of noncued trials.
+
+So it's possible that this affected my analysis. But I would expect this to have affected the other analyses as well. Other sources of error could have been my own aggregation mistake or a typo in the paper. 
+
+```{r session_info, include=TRUE, echo=TRUE, results='markup'}
+devtools::session_info()
+```

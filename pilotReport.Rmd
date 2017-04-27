@@ -8,9 +8,8 @@ output:
 
 #### Article ID: UAIUi
 #### Pilot: Kyle MacDonald
-#### Co-pilot: Tom Hardwicke  
 #### Start date: 4/12/17
-#### End date: [Insert end date - use US format]   
+#### End date: 4/17/17  
 
 -------
 
