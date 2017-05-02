@@ -230,8 +230,8 @@ div.tocify {
 <div id="start-date-41217" class="section level4">
 <h4>Start date: 4/12/17</h4>
 </div>
-<div id="end-date-insert-end-date---use-us-format" class="section level4">
-<h4>End date: [Insert end date - use US format]</h4>
+<div id="end-date-50217" class="section level4">
+<h4>End date: 5/02/17</h4>
 <hr />
 </div>
 <div id="methods-summary" class="section level4">
@@ -323,8 +323,7 @@ ss_lr %&gt;%
   summarise(n = n(),
     accuracy = mean(accuracy_ss) * 100,
             sd = sd(accuracy_ss) * 100) %&gt;% 
-  mutate(analysis = &quot;letter_recall&quot;) %&gt;% 
-  mutate_if(is.numeric, round, digits = 2) %&gt;% 
+  mutate(analysis = &quot;letter_recall&quot;) %&gt;%
   kable()</code></pre>
 <table>
 <thead>
@@ -338,8 +337,8 @@ ss_lr %&gt;%
 <tbody>
 <tr class="odd">
 <td align="right">12</td>
-<td align="right">57.32</td>
-<td align="right">17.78</td>
+<td align="right">57.3223</td>
+<td align="right">17.78471</td>
 <td align="left">letter_recall</td>
 </tr>
 </tbody>
@@ -432,14 +431,29 @@ ms_div %&gt;% kable()</code></pre>
 </tr>
 </tbody>
 </table>
-<p>The obtained mean and standard deviation of Diversity Accuracy are different from the reproduced values.</p>
 <pre class="r"><code># mean
 compareValues(reportedValue = 64.07, obtainedValue = ms_div$accuracy)</code></pre>
-<pre><code>## [1] &quot;MINOR NUMERICAL ERROR. The reported value (64.07) and the obtained value (64.09) differed by 0.03%&quot;</code></pre>
+<pre><code>## [1] &quot;MINOR NUMERICAL ERROR. The reported value (64.07) and the obtained value (64.09) differed by 0.03%. NB obtained value was rounded to 2 decimal places.&quot;</code></pre>
 <pre class="r"><code># sd
 compareValues(reportedValue = 7.81, obtainedValue = ms_div$sd)</code></pre>
-<pre><code>## [1] &quot;MAJOR NUMERICAL ERROR. The reported value (7.81) and the obtained value (4.78) differed by 38.8%&quot;</code></pre>
-<p>I’m not sure what happened here since all the other values have been spot on. This seems like it could be my error in computing the values or a typo in the table.</p>
+<pre><code>## [1] &quot;MAJOR NUMERICAL ERROR. The reported value (7.81) and the obtained value (4.78) differed by 38.8%. NB obtained value was rounded to 2 decimal places.&quot;</code></pre>
+<p>The obtained mean and standard deviation of Diversity Accuracy are different from the reproduced values.</p>
+<p>NB. We contacted the corresponding author of the original article to ask about this issue. The author advised that “Instead of getting a single mean for color diversity accuracy for each subject, then calculating the grand mean (and SD) across those values, I had broken down the accuracy values by another condition first (‘diversityType’), then averaged (and took the SD).” We repeated the analysis in this way (below):</p>
+<pre class="r"><code>ms_div &lt;- d %&gt;% filter(trialType == &quot;mainExperiment&quot;) %&gt;% 
+  group_by(subject, diversityType) %&gt;%
+  mutate(diversityAccuracy = as.numeric(diversityAccuracy)) %&gt;%
+  summarise(accuracy_ss = mean(diversityAccuracy)) %&gt;%
+  ungroup() %&gt;% 
+  summarise(n = n(),
+            accuracy = mean(accuracy_ss) * 100,
+            sd = sd(accuracy_ss) * 100) %&gt;% 
+  mutate(analysis = &quot;diversity&quot;) </code></pre>
+<pre class="r"><code># mean
+compareValues(reportedValue = 64.07, obtainedValue = ms_div$accuracy)</code></pre>
+<pre><code>## [1] &quot;MATCH. The reported value (64.07) and the obtained value (64.07) differed by 0%. NB obtained value was rounded to 2 decimal places.&quot;</code></pre>
+<pre class="r"><code># sd
+compareValues(reportedValue = 7.81, obtainedValue = ms_div$sd)</code></pre>
+<pre><code>## [1] &quot;MATCH. The reported value (7.81) and the obtained value (7.81) differed by 0%. NB obtained value was rounded to 2 decimal places.&quot;</code></pre>
 <ol start="4" style="list-style-type: decimal">
 <li><em>Color diversity by cue type</em>: From the codebook,</li>
 </ol>
@@ -458,7 +472,6 @@ ss_div_by_cue %&gt;%
             accuracy = mean(accuracy_ss) * 100,
             sd = sd(accuracy_ss) * 100) %&gt;% 
   mutate(analysis = &quot;diversity_by_cue_type&quot;) %&gt;% 
-  mutate_if(is.numeric, round, digits = 2) %&gt;% 
   kable()</code></pre>
 <table>
 <thead>
@@ -474,15 +487,15 @@ ss_div_by_cue %&gt;%
 <tr class="odd">
 <td align="left">cued</td>
 <td align="right">12</td>
-<td align="right">63.66</td>
-<td align="right">7.78</td>
+<td align="right">63.66166</td>
+<td align="right">7.784642</td>
 <td align="left">diversity_by_cue_type</td>
 </tr>
 <tr class="even">
 <td align="left">noncued</td>
 <td align="right">12</td>
-<td align="right">64.74</td>
-<td align="right">5.30</td>
+<td align="right">64.74265</td>
+<td align="right">5.296856</td>
 <td align="left">diversity_by_cue_type</td>
 </tr>
 </tbody>
@@ -506,7 +519,6 @@ ss_div_by_div %&gt;%
             accuracy = mean(accuracy_ss) * 100,
             sd = sd(accuracy_ss) * 100) %&gt;% 
   mutate(analysis = &quot;diversity_by_div_type&quot;) %&gt;% 
-  mutate_if(is.numeric, round, digits = 2) %&gt;% 
   kable()</code></pre>
 <table>
 <thead>
@@ -522,15 +534,15 @@ ss_div_by_div %&gt;%
 <tr class="odd">
 <td align="left">high</td>
 <td align="right">12</td>
-<td align="right">62.98</td>
-<td align="right">9.84</td>
+<td align="right">62.97608</td>
+<td align="right">9.835934</td>
 <td align="left">diversity_by_div_type</td>
 </tr>
 <tr class="even">
 <td align="left">low</td>
 <td align="right">12</td>
-<td align="right">65.16</td>
-<td align="right">5.32</td>
+<td align="right">65.15868</td>
+<td align="right">5.324427</td>
 <td align="left">diversity_by_div_type</td>
 </tr>
 </tbody>
@@ -572,11 +584,10 @@ acc_reported_d &lt;- 2.6
 coh_d &lt;- ss_lr %&gt;% 
   summarise(m = mean(accuracy_ss),
             stdev = sd(accuracy_ss)) %&gt;% 
-  mutate(coh_d = (m - null_m) / stdev) %&gt;% 
-  mutate_if(is.numeric, round, digits = 2)
+  mutate(coh_d = (m - null_m) / stdev)
 
-coh_d$coh_d == acc_reported_d</code></pre>
-<pre><code>## [1] TRUE</code></pre>
+coh_d$coh_d</code></pre>
+<pre><code>## [1] 2.598429</code></pre>
 <p>This value matches the reported Cohen’s d.</p>
 <ol start="2" style="list-style-type: decimal">
 <li><em>Letter recall – cue type</em>: use 1-way ANOVA to compare effect of cueType on letter recall accuracy. <span class="math inline">\(F = 2.11, p = 0.17, \eta_p^2 = 0.16\)</span></li>
@@ -594,7 +605,7 @@ summary(m1)</code></pre>
 ##           Df  Sum Sq  Mean Sq F value Pr(&gt;F)
 ## cueType    1 0.00919 0.009194   2.108  0.174
 ## Residuals 11 0.04798 0.004362</code></pre>
-<p>From the resutls section, it wasn’t immediately clear whether Ward et al. did a repeated measures ANOVA here. But when you include this information in the model, the <span class="math inline">\(F\)</span> and <span class="math inline">\(p\)</span>.</p>
+<p>From the results section, it wasn’t immediately clear whether Ward et al. did a repeated measures ANOVA here. But when you include this information in the model, the <span class="math inline">\(F\)</span> and <span class="math inline">\(p\)</span>.</p>
 <p>Check the effect size: <span class="math inline">\(SS_{effect} / SS{resdiual}\)</span> (from <a href="http://www.statisticshowto.com/eta-squared/" class="uri">http://www.statisticshowto.com/eta-squared/</a>)</p>
 <pre class="r"><code>lr_eta &lt;- round(0.00919 / (0.00919 + 0.04798), 2)
 lr_eta</code></pre>
@@ -621,8 +632,8 @@ t_div</code></pre>
 ## mean of x 
 ##  64.09314</code></pre>
 <p>It looks like there might be a <em>very</em> minor error in the t-statistic. Could be rounding errors?</p>
-<pre class="r"><code>compareValues(reportedValue = 10.10, obtainedValue = round(t_div$statistic, 2))</code></pre>
-<pre><code>## [1] &quot;MINOR NUMERICAL ERROR. The reported value (10.1) and the obtained value (10.2) differed by 0.99%&quot;</code></pre>
+<pre class="r"><code>compareValues(reportedValue = 10.10, obtainedValue = t_div$statistic)</code></pre>
+<pre><code>## [1] &quot;MINOR NUMERICAL ERROR. The reported value (10.1) and the obtained value (10.2) differed by 0.99%. NB obtained value was rounded to 1 decimal places.&quot;</code></pre>
 <p>Check the effect size:</p>
 <pre class="r"><code>null_m &lt;- 0.5
 div_reported_d &lt;- 2.92
@@ -630,14 +641,13 @@ div_reported_d &lt;- 2.92
 div_coh_d &lt;- ss_div %&gt;% 
   summarise(m = mean(accuracy_ss),
             stdev = sd(accuracy_ss)) %&gt;% 
-  mutate(coh_d = (m - null_m) / stdev) %&gt;% 
-  mutate_if(is.numeric, round, digits = 2)
+  mutate(coh_d = (m - null_m) / stdev)
 
-div_coh_d$coh_d == div_reported_d</code></pre>
-<pre><code>## [1] FALSE</code></pre>
+div_coh_d$coh_d</code></pre>
+<pre><code>## [1] 2.945814</code></pre>
 <p>Again, looks like a <em>very</em> minor difference between the reported and obtained Cohen’s d values.</p>
 <pre class="r"><code>compareValues(reportedValue = div_reported_d, obtainedValue = div_coh_d$coh_d)</code></pre>
-<pre><code>## [1] &quot;MINOR NUMERICAL ERROR. The reported value (2.92) and the obtained value (2.95) differed by 1.03%&quot;</code></pre>
+<pre><code>## [1] &quot;MINOR NUMERICAL ERROR. The reported value (2.92) and the obtained value (2.95) differed by 1.03%. NB obtained value was rounded to 2 decimal places.&quot;</code></pre>
 <p>4-6. <em>Color diversity as a function of cue type and diversity type</em>: From the codebook,</p>
 <blockquote>
 <p>(use 2 [cueType] x 2 [diversityType] ANOVA to find main effect of cueType on color diversity accuracy</p>
@@ -692,7 +702,7 @@ round(0.00046 / (0.00046 + 0.16049), 2)</code></pre>
           Article_ID = 'UAIUi', 
           Insufficient_Information_Errors = 0,
           Decision_Errors = 0, 
-          Major_Numerical_Errors = 1, 
+          Major_Numerical_Errors = 0, 
           Minor_Numerical_Errors = 2)</code></pre>
 <table>
 <thead>
@@ -708,17 +718,13 @@ round(0.00046 / (0.00046 + 0.16049), 2)</code></pre>
 <tr class="odd">
 <td align="right">0</td>
 <td align="right">0</td>
-<td align="right">1</td>
+<td align="right">0</td>
 <td align="right">2</td>
-<td align="left">Failure</td>
+<td align="left">Success</td>
 </tr>
 </tbody>
 </table>
-<p>Overall, I thought the authors did a good job facilitating reproducibility by providing a tidy data file with relatively clear documentation about the variable types and about how to perform the various analyses. The only place where I had trouble reproducing the reported values was the <em>Color Diversity Accuracy</em> analysis. I got a different mean value and a different standard deviation. The authors do mention in their codebook that participants 1-3 completed a different number of trials:</p>
-<blockquote>
-<p>The first three subjects in Exp 1 and Exp 2 (d1-d3; s1-s3) were run in a longer version, but only analyzed up to the same trial number as the other subjects. This resulted in a different total number of noncued trials.</p>
-</blockquote>
-<p>So it’s possible that this affected my analysis. But I would expect this to have affected the other analyses as well. Other sources of error could have been my own aggregation mistake or a typo in the paper.</p>
+<p>Overall, we thought the authors did a good job facilitating reproducibility by providing a tidy data file with relatively clear documentation about the variable types and about how to perform the various analyses. The only place we had trouble reproducing the reported values was the <em>Color Diversity Accuracy</em> analysis. Initially we obtained a different mean value and a different standard deviation. We contacted the corresponding author for clarification and she quickly identified the problem: “Instead of getting a single mean for color diversity accuracy for each subject, then calculating the grand mean (and SD) across those values, I had broken down the accuracy values by another condition first (‘diversityType’), then averaged (and took the SD).” This is not what we expected from what was reported in the paper. However, when we followed the authors’ instructions for this different type of analysis we were able to successfully reproduce the target values.</p>
 <pre class="r"><code>devtools::session_info()</code></pre>
 <pre><code>##  setting  value                       
 ##  version  R version 3.3.2 (2016-10-31)
@@ -727,17 +733,18 @@ round(0.00046 / (0.00046 + 0.16049), 2)</code></pre>
 ##  language (EN)                        
 ##  collate  en_US.UTF-8                 
 ##  tz       America/Los_Angeles         
-##  date     2017-04-27                  
+##  date     2017-05-02                  
 ## 
 ##  package    * version  date      
 ##  assertthat   0.1      2013-12-06
 ##  backports    1.0.5    2017-01-18
 ##  broom        0.4.2    2017-02-13
-##  CODreports * 0.1      2017-04-27
+##  cellranger   1.1.0    2016-07-27
+##  CODreports * 0.1      2017-05-02
 ##  colorspace   1.3-2    2016-12-14
-##  DBI          0.6-1    2017-04-01
+##  DBI          0.5-1    2016-09-10
 ##  devtools     1.12.0   2016-06-24
-##  digest       0.6.12   2017-01-27
+##  digest       0.6.11   2017-01-03
 ##  dplyr      * 0.5.0    2016-06-24
 ##  evaluate     0.10     2016-10-11
 ##  forcats      0.2.0    2017-01-23
@@ -749,7 +756,7 @@ round(0.00046 / (0.00046 + 0.16049), 2)</code></pre>
 ##  hms          0.3      2016-11-22
 ##  htmltools    0.3.5    2016-03-21
 ##  httr         1.2.1    2016-07-03
-##  jsonlite     1.4      2017-04-08
+##  jsonlite     1.3      2017-02-28
 ##  knitr      * 1.15.1   2016-11-22
 ##  lattice      0.20-34  2016-09-06
 ##  lazyeval     0.2.0    2016-06-12
@@ -760,20 +767,19 @@ round(0.00046 / (0.00046 + 0.16049), 2)</code></pre>
 ##  modelr       0.1.0    2016-08-31
 ##  munsell      0.4.3    2016-02-13
 ##  nlme         3.1-128  2016-05-10
-##  packrat      0.4.8-1  2016-09-07
 ##  plyr         1.8.4    2016-06-08
 ##  psych        1.7.3.21 2017-03-22
 ##  purrr      * 0.2.2    2016-06-18
 ##  R6           2.2.0    2016-10-05
 ##  Rcpp         0.12.10  2017-03-19
-##  readr      * 1.1.0    2017-03-22
-##  readxl     * 0.1.1    2016-03-28
+##  readr      * 1.0.0    2016-08-03
+##  readxl     * 1.0.0    2017-04-18
 ##  reshape2     1.4.2    2016-10-22
 ##  rmarkdown    1.4      2017-03-24
 ##  rprojroot    1.2      2017-01-16
 ##  rvest        0.3.2    2016-06-17
 ##  scales       0.4.1    2016-11-09
-##  stringi      1.1.5    2017-04-07
+##  stringi      1.1.2    2016-10-01
 ##  stringr    * 1.2.0    2017-02-18
 ##  tibble     * 1.3.0    2017-04-01
 ##  tidyr      * 0.6.1    2017-01-10
@@ -782,36 +788,21 @@ round(0.00046 / (0.00046 + 0.16049), 2)</code></pre>
 ##  xml2         1.1.1    2017-01-24
 ##  yaml         2.1.14   2016-11-12
 ##  source                                              
-##  CRAN (R 3.3.2)                                      
-##  CRAN (R 3.3.2)                                      
-##  CRAN (R 3.3.2)                                      
-##  Github (CognitionOpenDataProject/CODreports@b5f7566)
-##  CRAN (R 3.3.2)                                      
-##  CRAN (R 3.3.2)                                      
-##  CRAN (R 3.3.0)                                      
-##  CRAN (R 3.3.2)                                      
-##  CRAN (R 3.3.0)                                      
 ##  CRAN (R 3.3.0)                                      
 ##  CRAN (R 3.3.2)                                      
 ##  CRAN (R 3.3.2)                                      
-##  CRAN (R 3.3.2)                                      
 ##  CRAN (R 3.3.0)                                      
+##  Github (CognitionOpenDataProject/CODreports@d8f3567)
+##  CRAN (R 3.3.2)                                      
 ##  CRAN (R 3.3.0)                                      
 ##  CRAN (R 3.3.0)                                      
 ##  CRAN (R 3.3.2)                                      
 ##  CRAN (R 3.3.0)                                      
 ##  CRAN (R 3.3.0)                                      
+##  cran (@0.2.0)                                       
 ##  CRAN (R 3.3.2)                                      
 ##  CRAN (R 3.3.2)                                      
-##  CRAN (R 3.3.2)                                      
 ##  CRAN (R 3.3.0)                                      
-##  CRAN (R 3.3.0)                                      
-##  CRAN (R 3.3.0)                                      
-##  CRAN (R 3.3.2)                                      
-##  CRAN (R 3.3.0)                                      
-##  CRAN (R 3.3.0)                                      
-##  CRAN (R 3.3.0)                                      
-##  CRAN (R 3.3.2)                                      
 ##  CRAN (R 3.3.0)                                      
 ##  CRAN (R 3.3.0)                                      
 ##  CRAN (R 3.3.2)                                      
@@ -821,17 +812,32 @@ round(0.00046 / (0.00046 + 0.16049), 2)</code></pre>
 ##  CRAN (R 3.3.2)                                      
 ##  CRAN (R 3.3.2)                                      
 ##  CRAN (R 3.3.0)                                      
+##  CRAN (R 3.3.0)                                      
+##  CRAN (R 3.3.0)                                      
+##  CRAN (R 3.3.0)                                      
+##  CRAN (R 3.3.0)                                      
+##  CRAN (R 3.3.0)                                      
+##  CRAN (R 3.3.0)                                      
+##  CRAN (R 3.3.2)                                      
+##  CRAN (R 3.3.0)                                      
+##  CRAN (R 3.3.2)                                      
+##  CRAN (R 3.3.0)                                      
+##  CRAN (R 3.3.0)                                      
+##  cran (@0.12.10)                                     
+##  CRAN (R 3.3.0)                                      
+##  cran (@1.0.0)                                       
+##  CRAN (R 3.3.0)                                      
 ##  CRAN (R 3.3.2)                                      
 ##  CRAN (R 3.3.2)                                      
 ##  CRAN (R 3.3.0)                                      
 ##  CRAN (R 3.3.2)                                      
-##  CRAN (R 3.3.2)                                      
-##  CRAN (R 3.3.2)                                      
-##  CRAN (R 3.3.2)                                      
+##  CRAN (R 3.3.0)                                      
+##  cran (@1.2.0)                                       
+##  cran (@1.3.0)                                       
 ##  CRAN (R 3.3.2)                                      
 ##  CRAN (R 3.3.2)                                      
 ##  CRAN (R 3.3.0)                                      
-##  CRAN (R 3.3.2)                                      
+##  cran (@1.1.1)                                       
 ##  CRAN (R 3.3.2)</code></pre>
 </div>
 

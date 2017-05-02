@@ -10,7 +10,7 @@ output:
 #### Pilot: Kyle MacDonald
 #### Co-pilot: Tom Hardwicke  
 #### Start date: 4/12/17
-#### End date: [Insert end date - use US format]   
+#### End date: 5/02/17  
 
 -------
 
@@ -118,8 +118,7 @@ ss_lr %>%
   summarise(n = n(),
     accuracy = mean(accuracy_ss) * 100,
             sd = sd(accuracy_ss) * 100) %>% 
-  mutate(analysis = "letter_recall") %>% 
-  mutate_if(is.numeric, round, digits = 2) %>% 
+  mutate(analysis = "letter_recall") %>%
   kable()
 ```
 
@@ -170,8 +169,6 @@ ms_div <- ss_div %>%
 ms_div %>% kable()
 ```
 
-The obtained mean and standard deviation of Diversity Accuracy are different from the reproduced values. 
-
 ```{r}
 # mean
 compareValues(reportedValue = 64.07, obtainedValue = ms_div$accuracy)
@@ -180,7 +177,30 @@ compareValues(reportedValue = 64.07, obtainedValue = ms_div$accuracy)
 compareValues(reportedValue = 7.81, obtainedValue = ms_div$sd)
 ```
 
-I'm not sure what happened here since all the other values have been spot on. This seems like it could be my error in computing the values or a typo in the table. 
+The obtained mean and standard deviation of Diversity Accuracy are different from the reproduced values. 
+
+
+NB. We contacted the corresponding author of the original article to ask about this issue. The author advised that "Instead of getting a single mean for color diversity accuracy for each subject, then calculating the grand mean (and SD) across those values, I had broken down the accuracy values by another condition first ('diversityType'), then averaged (and took the SD)." We repeated the analysis in this way (below):
+
+```{r}
+ms_div <- d %>% filter(trialType == "mainExperiment") %>% 
+  group_by(subject, diversityType) %>%
+  mutate(diversityAccuracy = as.numeric(diversityAccuracy)) %>%
+  summarise(accuracy_ss = mean(diversityAccuracy)) %>%
+  ungroup() %>% 
+  summarise(n = n(),
+            accuracy = mean(accuracy_ss) * 100,
+            sd = sd(accuracy_ss) * 100) %>% 
+  mutate(analysis = "diversity") 
+```
+  
+```{r}
+# mean
+compareValues(reportedValue = 64.07, obtainedValue = ms_div$accuracy)
+
+# sd
+compareValues(reportedValue = 7.81, obtainedValue = ms_div$sd)
+```
 
 4. *Color diversity by cue type*: From the codebook,
 
@@ -199,7 +219,6 @@ ss_div_by_cue %>%
             accuracy = mean(accuracy_ss) * 100,
             sd = sd(accuracy_ss) * 100) %>% 
   mutate(analysis = "diversity_by_cue_type") %>% 
-  mutate_if(is.numeric, round, digits = 2) %>% 
   kable()
 ```
 
@@ -222,7 +241,6 @@ ss_div_by_div %>%
             accuracy = mean(accuracy_ss) * 100,
             sd = sd(accuracy_ss) * 100) %>% 
   mutate(analysis = "diversity_by_div_type") %>% 
-  mutate_if(is.numeric, round, digits = 2) %>% 
   kable()
 ```
 
@@ -256,10 +274,9 @@ acc_reported_d <- 2.6
 coh_d <- ss_lr %>% 
   summarise(m = mean(accuracy_ss),
             stdev = sd(accuracy_ss)) %>% 
-  mutate(coh_d = (m - null_m) / stdev) %>% 
-  mutate_if(is.numeric, round, digits = 2)
+  mutate(coh_d = (m - null_m) / stdev)
 
-coh_d$coh_d == acc_reported_d
+coh_d$coh_d
 ```
 
 This value matches the reported Cohen's d.
@@ -273,7 +290,7 @@ m1 <- aov(accuracy_ss ~ cueType + Error(subject / cueType),
 summary(m1)
 ```
 
-From the resutls section, it wasn't immediately clear whether Ward et al. did a repeated measures ANOVA here. But when you include this information in the model, the $F$ and $p$.
+From the results section, it wasn't immediately clear whether Ward et al. did a repeated measures ANOVA here. But when you include this information in the model, the $F$ and $p$.
 
 Check the effect size: $SS_{effect} / SS{resdiual}$ (from http://www.statisticshowto.com/eta-squared/)
 
@@ -298,7 +315,7 @@ t_div
 It looks like there might be a *very* minor error in the t-statistic. Could be rounding errors?
 
 ```{r}
-compareValues(reportedValue = 10.10, obtainedValue = round(t_div$statistic, 2))
+compareValues(reportedValue = 10.10, obtainedValue = t_div$statistic)
 ```
 
 Check the effect size:
@@ -310,10 +327,9 @@ div_reported_d <- 2.92
 div_coh_d <- ss_div %>% 
   summarise(m = mean(accuracy_ss),
             stdev = sd(accuracy_ss)) %>% 
-  mutate(coh_d = (m - null_m) / stdev) %>% 
-  mutate_if(is.numeric, round, digits = 2)
+  mutate(coh_d = (m - null_m) / stdev)
 
-div_coh_d$coh_d == div_reported_d
+div_coh_d$coh_d
 ```
 
 Again, looks like a *very* minor difference between the reported and obtained Cohen's d values. 
@@ -365,15 +381,12 @@ codReport(Report_Type = 'joint',
           Article_ID = 'UAIUi', 
           Insufficient_Information_Errors = 0,
           Decision_Errors = 0, 
-          Major_Numerical_Errors = 1, 
+          Major_Numerical_Errors = 0, 
           Minor_Numerical_Errors = 2)
 ```
 
-Overall, I thought the authors did a good job facilitating reproducibility by providing a tidy data file with relatively clear documentation about the variable types and about how to perform the various analyses. The only place where I had trouble reproducing the reported values was the *Color Diversity Accuracy* analysis. I got a different mean value and a different standard deviation. The authors do mention in their codebook that participants 1-3 completed a different number of trials:
+Overall, we thought the authors did a good job facilitating reproducibility by providing a tidy data file with relatively clear documentation about the variable types and about how to perform the various analyses. The only place we had trouble reproducing the reported values was the *Color Diversity Accuracy* analysis. Initially we obtained a different mean value and a different standard deviation. We contacted the corresponding author for clarification and she quickly identified the problem: "Instead of getting a single mean for color diversity accuracy for each subject, then calculating the grand mean (and SD) across those values, I had broken down the accuracy values by another condition first ('diversityType'), then averaged (and took the SD)." This is not what we expected from what was reported in the paper. However, when we followed the authors' instructions for this different type of analysis we were able to successfully reproduce the target values.
 
-> The first three subjects in Exp 1 and Exp 2 (d1-d3; s1-s3) were run in a longer version, but only analyzed up to the same trial number as the other subjects. This resulted in a different total number of noncued trials.
-
-So it's possible that this affected my analysis. But I would expect this to have affected the other analyses as well. Other sources of error could have been my own aggregation mistake or a typo in the paper. 
 
 ```{r session_info, include=TRUE, echo=TRUE, results='markup'}
 devtools::session_info()
