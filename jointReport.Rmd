@@ -382,7 +382,8 @@ codReport(Report_Type = 'joint',
           Insufficient_Information_Errors = 0,
           Decision_Errors = 0, 
           Major_Numerical_Errors = 0, 
-          Minor_Numerical_Errors = 2)
+          Minor_Numerical_Errors = 2,
+          Author_Assistance = T)
 ```
 
 Overall, we thought the authors did a good job facilitating reproducibility by providing a tidy data file with relatively clear documentation about the variable types and about how to perform the various analyses. The only place we had trouble reproducing the reported values was the *Color Diversity Accuracy* analysis. Initially we obtained a different mean value and a different standard deviation. We contacted the corresponding author for clarification and she quickly identified the problem: "Instead of getting a single mean for color diversity accuracy for each subject, then calculating the grand mean (and SD) across those values, I had broken down the accuracy values by another condition first ('diversityType'), then averaged (and took the SD)." This is not what we expected from what was reported in the paper. However, when we followed the authors' instructions for this different type of analysis we were able to successfully reproduce the target values.
